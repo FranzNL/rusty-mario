@@ -11,6 +11,8 @@ mod level;
 mod physics;
 mod player;
 mod states;
+mod fullscreen;
+mod touch_controls;
 mod ui;
 
 use audio::AudioPlugin;
@@ -24,6 +26,8 @@ use level::LevelPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use states::{DeathPauseTimer, GameState};
+use fullscreen::FullscreenPlugin;
+use touch_controls::TouchControlsPlugin;
 use ui::UiPlugin;
 
 fn main() {
@@ -46,7 +50,7 @@ fn main() {
                     ..default()
                 }),
         )
-        .insert_resource(ClearColor(Color::srgb(0.53, 0.81, 0.98)))
+        .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(GameData {
             score: 0,
             highscore: 0,
@@ -65,6 +69,8 @@ fn main() {
         .add_plugins(EnemiesPlugin)
         .add_plugins(ItemsPlugin)
         .add_plugins(AudioPlugin)
+        .add_plugins(FullscreenPlugin)
+        .add_plugins(TouchControlsPlugin)
         .add_plugins(UiPlugin)
         .run();
 }

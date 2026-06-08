@@ -66,7 +66,7 @@ fn setup_hud(
     )).id();
     ui_handles.score_text = Some(score_e);
 
-    // Lives text
+    // Lives text (top-left, next to mario icon)
     let lives_e = commands.spawn((
         Text2d::new(format!("x{}", data.lives.max(0))),
         TextFont {
@@ -75,7 +75,7 @@ fn setup_hud(
             ..default()
         },
         TextColor(Color::WHITE),
-        Transform::from_xyz(WINDOW_W * 0.5 + 40.0, -24.0, 10.0),
+        Transform::from_xyz(52.0, -20.0, 10.0),
         UiEntity,
     )).id();
     ui_handles.lives_text = Some(lives_e);
@@ -108,15 +108,16 @@ fn setup_hud(
     )).id();
     ui_handles.time_text = Some(time_e);
 
-    // Mario icon (lives indicator)
-    commands.spawn((
+    // Mario icon (lives indicator, top-left)
+    let icon_e = commands.spawn((
         Sprite {
             image: assets.mario_life_icon.clone(),
             ..default()
         },
-        Transform::from_xyz(WINDOW_W * 0.5, -16.0, 10.0).with_scale(Vec3::splat(SPRITE_SCALE)),
+        Transform::from_xyz(22.0, -20.0, 10.0).with_scale(Vec3::splat(SPRITE_SCALE)),
         UiEntity,
-    ));
+    )).id();
+    ui_handles.mario_icon = Some(icon_e);
 }
 
 fn update_hud(
@@ -124,10 +125,10 @@ fn update_hud(
     camera_q: Query<&Transform, With<MainCamera>>,
     ui_handles: Res<UiHandles>,
     mut text_q: Query<(&mut Text2d, &mut Transform), (With<UiEntity>, Without<MainCamera>)>,
+    mut sprite_q: Query<&mut Transform, (With<Sprite>, With<UiEntity>, Without<MainCamera>, Without<Text2d>)>,
 ) {
     let Ok(cam_t) = camera_q.get_single() else { return; };
     let cam_x = cam_t.translation.x;
-    // HUD follows camera (since we're using world-space 2D text)
     let hud_left = cam_x - WINDOW_W * 0.5;
     let hud_top = CAMERA_Y + WINDOW_H * 0.5;
 
@@ -139,12 +140,12 @@ fn update_hud(
             t.translation.y = hud_top - 12.0;
         }
     }
-    // Update lives
+    // Update lives (top-left, right of icon)
     if let Some(e) = ui_handles.lives_text {
         if let Ok((mut text, mut t)) = text_q.get_mut(e) {
             text.0 = format!("x{}", data.lives.max(0));
-            t.translation.x = hud_left + WINDOW_W * 0.5 + 40.0;
-            t.translation.y = hud_top - 24.0;
+            t.translation.x = hud_left + 52.0;
+            t.translation.y = hud_top - 20.0;
         }
     }
     // Update world
@@ -161,6 +162,13 @@ fn update_hud(
             text.0 = format!("Time: {}", data.time as i32);
             t.translation.x = hud_left + WINDOW_W - 80.0;
             t.translation.y = hud_top - 48.0;
+        }
+    }
+    // Update mario icon (top-left)
+    if let Some(e) = ui_handles.mario_icon {
+        if let Ok(mut t) = sprite_q.get_mut(e) {
+            t.translation.x = hud_left + 22.0;
+            t.translation.y = hud_top - 20.0;
         }
     }
 }
@@ -183,7 +191,7 @@ fn setup_main_menu(mut commands: Commands, assets: Res<GameAssets>) {
         UiEntity,
     ));
     commands.spawn((
-        Text2d::new("Press Z to Start"),
+        Text2d::new("Press Z or tap to start"),
         TextFont { font: assets.font.clone(), font_size: 24.0, ..default() },
         TextColor(Color::WHITE),
         Transform::from_xyz(cx, cy, 10.0),
@@ -200,10 +208,15 @@ fn setup_main_menu(mut commands: Commands, assets: Res<GameAssets>) {
 
 fn main_menu_input(
     keys: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
     mut next: ResMut<NextState<GameState>>,
     mut data: ResMut<GameData>,
 ) {
-    if keys.just_pressed(KeyCode::KeyZ) || keys.just_pressed(KeyCode::Enter) {
+    if keys.just_pressed(KeyCode::KeyZ) || keys.just_pressed(KeyCode::Enter)
+        || mouse.just_pressed(MouseButton::Left)
+        || touches.any_just_pressed()
+    {
         data.score = 0;
         data.highscore = 0;
         data.lives = 3;
@@ -242,10 +255,15 @@ fn setup_gameover(mut commands: Commands, assets: Res<GameAssets>, data: Res<Gam
 
 fn gameover_input(
     keys: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
     mut next: ResMut<NextState<GameState>>,
     mut data: ResMut<GameData>,
 ) {
-    if keys.just_pressed(KeyCode::KeyZ) || keys.just_pressed(KeyCode::Enter) {
+    if keys.just_pressed(KeyCode::KeyZ) || keys.just_pressed(KeyCode::Enter)
+        || mouse.just_pressed(MouseButton::Left)
+        || touches.any_just_pressed()
+    {
         data.score = 0;
         data.lives = 3;
         data.level = 1;

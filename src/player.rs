@@ -54,6 +54,7 @@ fn despawn_player(mut commands: Commands, q: Query<Entity, With<Player>>) {
 pub fn player_input(
     time: Res<Time>,
     keys: Res<ButtonInput<KeyCode>>,
+    vi: Res<crate::components::VirtualInput>,
     mut query: Query<(&mut Velocity, &mut Grounded, &mut Player, &Transform)>,
     mut sound_events: EventWriter<SoundEvent>,
 ) {
@@ -65,8 +66,8 @@ pub fn player_input(
     player.hit_timer -= dt;
     player.still_timer -= dt;
 
-    let jump_pressed = keys.just_pressed(KeyCode::KeyZ);
-    let jump_held = keys.pressed(KeyCode::KeyZ);
+    let jump_pressed = keys.just_pressed(KeyCode::KeyZ) || vi.jump_just;
+    let jump_held = keys.pressed(KeyCode::KeyZ) || vi.jump;
     player.holding_jump = jump_held;
 
     // Buffer a jump press for up to 100ms so timing windows feel responsive
@@ -79,11 +80,11 @@ pub fn player_input(
     // Horizontal movement
     let mut dx = 0.0f32;
     if player.still_timer <= 0.0 {
-        if keys.pressed(KeyCode::ArrowLeft) {
+        if keys.pressed(KeyCode::ArrowLeft) || vi.left {
             dx = -1.0;
             player.facing = -1.0;
         }
-        if keys.pressed(KeyCode::ArrowRight) {
+        if keys.pressed(KeyCode::ArrowRight) || vi.right {
             dx = 1.0;
             player.facing = 1.0;
         }

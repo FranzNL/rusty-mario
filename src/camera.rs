@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::render::camera::{ScalingMode, Viewport};
 use crate::components::*;
 use crate::constants::*;
 use crate::level::LevelMeta;
@@ -12,19 +13,64 @@ impl Plugin for CameraPlugin {
             .add_systems(OnEnter(GameState::Playing), reset_camera)
             .add_systems(
                 Update,
-                (camera_follow, parallax_background)
+                (
+                    letterbox,
+                    camera_follow,
+                    parallax_background,
+                )
                     .chain()
                     .run_if(in_state(GameState::Playing)),
-            );
+            )
+            .add_systems(Update, letterbox.run_if(not(in_state(GameState::Playing))));
     }
 }
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d,
+        Camera {
+            clear_color: ClearColorConfig::Custom(Color::srgb(0.53, 0.81, 0.98)),
+            ..default()
+        },
+        OrthographicProjection {
+            scaling_mode: ScalingMode::Fixed { width: WINDOW_W, height: WINDOW_H },
+            ..OrthographicProjection::default_2d()
+        },
         Transform::from_xyz(WINDOW_W * 0.5, CAMERA_Y, 100.0),
         MainCamera,
     ));
+}
+
+fn letterbox(windows: Query<&Window>, mut camera_q: Query<&mut Camera, With<MainCamera>>) {
+    let Ok(window) = windows.get_single() else { return; };
+    let Ok(mut cam) = camera_q.get_single_mut() else { return; };
+
+    let pw = window.physical_width() as f32;
+    let ph = window.physical_height() as f32;
+    if pw == 0.0 || ph == 0.0 { return; }
+
+    let game_aspect = WINDOW_W / WINDOW_H;
+    let win_aspect  = pw / ph;
+
+    let (vw, vh, vx, vy) = if win_aspect > game_aspect {
+        // wider than 4:3 — black bars on left/right
+        let vh = ph;
+        let vw = (vh * game_aspect).round();
+        let vx = ((pw - vw) / 2.0).round();
+        (vw as u32, vh as u32, vx as u32, 0u32)
+    } else {
+        // taller than 4:3 — black bars on top/bottom
+        let vw = pw;
+        let vh = (vw / game_aspect).round();
+        let vy = ((ph - vh) / 2.0).round();
+        (vw as u32, vh as u32, 0u32, vy as u32)
+    };
+
+    cam.viewport = Some(Viewport {
+        physical_position: UVec2::new(vx, vy),
+        physical_size: UVec2::new(vw, vh),
+        ..default()
+    });
 }
 
 fn reset_camera(mut camera_q: Query<&mut Transform, With<MainCamera>>) {

@@ -205,6 +205,15 @@ pub struct PopCoin {
     pub frame: f32,
 }
 
+// ── Virtual (touch/mouse) input ─────────────────────────────────────
+#[derive(Resource, Default)]
+pub struct VirtualInput {
+    pub left: bool,
+    pub right: bool,
+    pub jump: bool,
+    pub jump_just: bool,
+}
+
 // ── Sound Events ────────────────────────────────────────────────────
 #[derive(Event, Clone, Copy, PartialEq)]
 pub enum SoundEvent {
@@ -232,4 +241,5 @@ pub struct UiHandles {
     pub lives_text: Option<Entity>,
     pub world_text: Option<Entity>,
     pub time_text: Option<Entity>,
+    pub mario_icon: Option<Entity>,
 }
