@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=640, initial-scale=1.0">
+    <title>Rusty Mario</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: monospace;
+            color: #eee;
+        }
+        h1 { margin-bottom: 12px; font-size: 1.4rem; letter-spacing: 2px; color: #f0c040; }
+        #controls { margin-top: 12px; font-size: 0.8rem; color: #aaa; }
+        canvas#bevy {
+            display: block;
+            width: 640px;
+            height: 480px;
+            image-rendering: pixelated;
+            border: 2px solid #444;
+        }
+        #start-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.72);
+        }
+        #start-btn {
+            font-family: monospace;
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            padding: 16px 44px;
+            background: #f0c040;
+            color: #1a1a2e;
+            border: none;
+            cursor: pointer;
+        }
+        #start-btn:hover { background: #ffe060; }
+    </style>
+</head>
+<body>
+    <h1>RUSTY MARIO</h1>
+    <div style="position:relative;">
+        <canvas id="bevy"></canvas>
+        <div id="start-overlay">
+            <button id="start-btn">&#9654; CLICK TO PLAY</button>
+        </div>
+    </div>
+    <div id="controls">
+        Arrow Keys: Move &nbsp;|&nbsp; Z: Jump &nbsp;|&nbsp; Esc: Menu
+    </div>
+    <script type="module">
+        import init from './rusty-mario.js';
+
+        // Pre-fetch and compile the WASM eagerly (no gesture needed for this part).
+        // By the time the user clicks, the module is already compiled and init()
+        // completes quickly enough to stay within the browser's gesture budget,
+        // so new AudioContext() is created with a valid gesture and won't be blocked.
+        const compiled = WebAssembly.compileStreaming(fetch('./rusty-mario_bg.wasm'));
+
+        document.getElementById('start-btn').addEventListener('click', async () => {
+            document.getElementById('start-overlay').remove();
+            await init(await compiled);
+        }, { once: true });
+    </script>
+</body>
+</html>
