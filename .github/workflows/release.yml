@@ -86,6 +86,7 @@ jobs:
           mkdir -p "$APP.app/Contents/Resources"
           cp "$BINARY" "$APP.app/Contents/MacOS/$APP"
           cp -r assets "$APP.app/Contents/Resources/"
+          cp assets/icon.icns "$APP.app/Contents/Resources/icon.icns"
 
           cat > "$APP.app/Contents/Info.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
@@ -94,6 +95,8 @@ jobs:
           <dict>
             <key>CFBundleExecutable</key>
             <string>$APP</string>
+            <key>CFBundleIconFile</key>
+            <string>icon</string>
             <key>CFBundleIdentifier</key>
             <string>com.rustymario.app</string>
             <key>CFBundleName</key>
@@ -208,6 +211,17 @@ jobs:
           mkdir -p "$DIST"
           cp target/release/$APP "$DIST/"
           cp -r assets "$DIST/"
+          cp assets/icon.png "$DIST/rusty-mario.png"
+          cat > "$DIST/rusty-mario.desktop" <<DESKTOP
+          [Desktop Entry]
+          Type=Application
+          Name=Rusty Mario
+          Comment=Bevy 0.15 port of Super Mario
+          Exec=rusty-mario
+          Icon=rusty-mario
+          Terminal=false
+          Categories=Game;ArcadeGame;
+          DESKTOP
           tar -czf "$DIST.tar.gz" "$DIST"
 
       - name: Upload artifact
