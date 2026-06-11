@@ -76,6 +76,29 @@ jobs:
             -k $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
+      - name: Generate app icon
+        run: |
+          SRC=assets/sprites/mario1.png
+          BG="#1a1a2e"
+          mkdir -p icon.iconset
+          for sz in 16 32 64 128 256 512 1024; do
+            magick "$SRC" \
+              -filter point -resize "${sz}x${sz}" \
+              -background "$BG" -gravity center -extent "${sz}x${sz}" \
+              "/tmp/icon-${sz}.png"
+          done
+          cp /tmp/icon-16.png   icon.iconset/icon_16x16.png
+          cp /tmp/icon-32.png   icon.iconset/icon_16x16@2x.png
+          cp /tmp/icon-32.png   icon.iconset/icon_32x32.png
+          cp /tmp/icon-64.png   icon.iconset/icon_32x32@2x.png
+          cp /tmp/icon-128.png  icon.iconset/icon_128x128.png
+          cp /tmp/icon-256.png  icon.iconset/icon_128x128@2x.png
+          cp /tmp/icon-256.png  icon.iconset/icon_256x256.png
+          cp /tmp/icon-512.png  icon.iconset/icon_256x256@2x.png
+          cp /tmp/icon-512.png  icon.iconset/icon_512x512.png
+          cp /tmp/icon-1024.png icon.iconset/icon_512x512@2x.png
+          iconutil -c icns icon.iconset -o icon.icns
+
       - name: Build .app bundle
         run: |
           APP=rusty-mario
@@ -86,6 +109,7 @@ jobs:
           mkdir -p "$APP.app/Contents/Resources"
           cp "$BINARY" "$APP.app/Contents/MacOS/$APP"
           cp -r assets "$APP.app/Contents/Resources/"
+          cp icon.icns "$APP.app/Contents/Resources/icon.icns"
 
           cat > "$APP.app/Contents/Info.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
@@ -94,6 +118,8 @@ jobs:
           <dict>
             <key>CFBundleExecutable</key>
             <string>$APP</string>
+            <key>CFBundleIconFile</key>
+            <string>icon</string>
             <key>CFBundleIdentifier</key>
             <string>com.rustymario.app</string>
             <key>CFBundleName</key>
@@ -201,6 +227,14 @@ jobs:
       - name: Build
         run: cargo build --release
 
+      - name: Generate Linux icon
+        run: |
+          sudo apt-get install -y imagemagick
+          magick assets/sprites/mario1.png \
+            -filter point -resize 256x256 \
+            -background "#1a1a2e" -gravity center -extent 256x256 \
+            /tmp/rusty-mario.png
+
       - name: Package tar.gz
         run: |
           APP=rusty-mario
@@ -208,6 +242,17 @@ jobs:
           mkdir -p "$DIST"
           cp target/release/$APP "$DIST/"
           cp -r assets "$DIST/"
+          cp /tmp/rusty-mario.png "$DIST/rusty-mario.png"
+          cat > "$DIST/rusty-mario.desktop" <<DESKTOP
+          [Desktop Entry]
+          Type=Application
+          Name=Rusty Mario
+          Comment=Bevy 0.15 port of Super Mario
+          Exec=rusty-mario
+          Icon=rusty-mario
+          Terminal=false
+          Categories=Game;ArcadeGame;
+          DESKTOP
           tar -czf "$DIST.tar.gz" "$DIST"
 
       - name: Upload artifact
@@ -237,8 +282,24 @@ jobs:
       - name: Build
         run: cargo build --release
 
-      - name: Install NSIS
-        run: choco install nsis -y
+      - name: Install NSIS and ImageMagick
+        run: choco install nsis imagemagick -y
+
+      - name: Generate installer icon
+        shell: pwsh
+        run: |
+          $bg = "#1a1a2e"
+          $src = "assets\sprites\mario1.png"
+          New-Item -ItemType Directory -Force -Path "build\icons" | Out-Null
+          foreach ($sz in 16,32,48,64,128,256) {
+            & magick $src `
+              -filter point -resize "${sz}x${sz}" `
+              -background $bg -gravity center -extent "${sz}x${sz}" `
+              "build\icons\icon-${sz}.png"
+          }
+          & magick build\icons\icon-256.png build\icons\icon-128.png build\icons\icon-64.png `
+                   build\icons\icon-48.png  build\icons\icon-32.png  build\icons\icon-16.png `
+                   "installer\icon.ico"
 
       - name: Build installer
         shell: pwsh
