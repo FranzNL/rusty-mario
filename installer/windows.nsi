@@ -12,6 +12,9 @@ InstallDirRegKey HKLM "Software\${APP_ID}" "Install_Dir"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 
+Icon "icon.ico"
+UninstallIcon "icon.ico"
+
 Page directory
 Page instfiles
 UninstPage uninstConfirm
@@ -20,12 +23,15 @@ UninstPage instfiles
 Section "Install"
   SetOutPath "$INSTDIR"
   File "rusty-mario.exe"
+  File "icon.ico"
   SetOutPath "$INSTDIR\assets"
   File /r "assets\*.*"
 
   WriteRegStr HKLM "Software\${APP_ID}" "Install_Dir" "$INSTDIR"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_ID}" \
     "DisplayName" "${APP_NAME}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_ID}" \
+    "DisplayIcon" '"$INSTDIR\icon.ico"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_ID}" \
     "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_ID}" \
@@ -35,8 +41,10 @@ Section "Install"
   WriteUninstaller "$INSTDIR\uninstall.exe"
 
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
-  CreateShortcut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
-  CreateShortcut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
+  CreateShortcut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" \
+    "$INSTDIR\${APP_EXE}" "" "$INSTDIR\icon.ico" 0
+  CreateShortcut "$DESKTOP\${APP_NAME}.lnk" \
+    "$INSTDIR\${APP_EXE}" "" "$INSTDIR\icon.ico" 0
 SectionEnd
 
 Section "Uninstall"
@@ -44,6 +52,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "Software\${APP_ID}"
 
   Delete "$INSTDIR\${APP_EXE}"
+  Delete "$INSTDIR\icon.ico"
   Delete "$INSTDIR\uninstall.exe"
   RMDir /r "$INSTDIR\assets"
   RMDir "$INSTDIR"
